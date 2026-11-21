@@ -122,8 +122,8 @@ const chapterEvidence={
 const allEvidence=[...clues,...Object.entries(chapterEvidence).flatMap(([chapter,items])=>items.map((entry,i)=>({id:"ch"+chapter+"_"+i,name:entry[0],detail:entry[1]})))];
 function setMission(title,hint){$("missionTitle").textContent=title;$("missionHint").textContent=hint;}
 function spawnChapterEvidence(index){
- // Do not replace activeClues here: the initial chapter must remain the three opening clues.
- for(const clue of activeClues){
+ const chapterClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2],color:0xc04a55}));
+ for(const clue of chapterClues){
   const group=new THREE.Group();group.position.copy(clue.pos);scene.add(group);
   const base=new THREE.Mesh(new THREE.BoxGeometry(.46,.06,.34),darkWood);base.castShadow=true;group.add(base);
   const sheet=new THREE.Mesh(new THREE.PlaneGeometry(.34,.25),paper);sheet.rotation.x=-Math.PI/2;sheet.position.y=.045;group.add(sheet);
@@ -132,6 +132,7 @@ function spawnChapterEvidence(index){
  }
 }
 for(const index of [2,3,4,5])spawnChapterEvidence(index);
+activeClues=clues; // Start the campaign with chapter I evidence.
 function startChapter(index){
  chapterIndex=index;activeClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2],color:0xc04a55}));
  for(const item of clueMeshes)item.group.visible=activeClues.some(c=>c.id===item.clue.id)&&!collected.has(item.clue.id);
