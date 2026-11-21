@@ -52,7 +52,15 @@ for(const x of [-1.75,1.75])for(const z of [-.65,.65])cube(scene,.16,1,.16,darkW
 for(let x=-12;x<=12;x+=6){const lamp=new THREE.PointLight(0xffd09a,7,8);lamp.position.set(x,3.8,1);scene.add(lamp);const bulb=new THREE.Mesh(new THREE.SphereGeometry(.09,12,8),new THREE.MeshBasicMaterial({color:0xffd9a1}));bulb.position.copy(lamp.position);scene.add(bulb);}
 const desk=cube(scene,2.8,.18,1.25,wood,-1,1,-5);
 for(const x of [-2.1,.1])for(const z of [-5.45,-4.55])cube(scene,.12,1,.12,darkWood,x,.48,z);
-cube(scene,.7,.06,.48,paper,-1,1.13,-5);
+
+const notebookPosition=new THREE.Vector3(-1,1.2,-5);
+const ledger=new THREE.Group();ledger.position.copy(notebookPosition);scene.add(ledger);
+const ledgerCover=mat(0x171316,.48),ledgerEdge=mat(0x8e2835,.55);
+cube(ledger,.62,.075,.46,ledgerCover,0,0,0);
+cube(ledger,.035,.078,.46,ledgerEdge,-.29,0,0);
+const ledgerSigil=new THREE.Mesh(new THREE.TorusGeometry(.105,.012,8,24),new THREE.MeshStandardMaterial({color:0xb64b52,metalness:.35,roughness:.4}));
+ledgerSigil.rotation.x=Math.PI/2;ledgerSigil.position.set(0,.041,0);ledger.add(ledgerSigil);
+const ledgerGlow=new THREE.PointLight(0x8d2634,1.1,2.4);ledgerGlow.position.set(0,.35,0);ledger.add(ledgerGlow);
 const rug=cube(scene,5,.035,3,mat(0x35272a),0,-.035,2.2);
 // Subtle floor inlays and architectural trim give the library more depth.
 const floorLine=mat(0x38312c);
@@ -74,7 +82,7 @@ const hair=new THREE.Mesh(new THREE.SphereGeometry(.26,12,8,0,Math.PI*2,0,Math.P
 const legs=mat(0x15191e);
 for(const x of [-.17,.17]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.48,3,6),legs);leg.position.set(x,.28,0);player.add(leg);}
 player.position.set(0,0,5);
-let yaw=0,pitch=-.08,firstPerson=false,nearby=null;
+let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false;
 const keys=new Set();
 let stickX=0,stickY=0;
 const clues=[
@@ -99,11 +107,12 @@ function renderPage(){
  const pages=[
   ["Дело № 001","В городской библиотеке произошло загадочное происшествие. Исследуй зал, найди три улики и установи, кто скрывает правду."],
   ["Материалы дела",clues.filter(c=>collected.has(c.id)).map(c=>"• "+c.name+": "+c.detail).join("\n\n")||"Пока улик нет. Найди светящиеся документы в библиотеке."],
-  ["Странный силуэт","Когда последняя улика была найдена, в глубине библиотеки мелькнула высокая фигура. Она не похожа ни на одного сотрудника..."]
+  ["Странный силуэт","Когда последняя улика была найдена, в глубине библиотеки мелькнула высокая фигура. Она не похожа ни на одного сотрудника..."],
+  ["Правила Чёрного реестра","I. Имя, записанное без понимания его истории, остаётся незавершённым.\n\nII. Каждая запись стирает одно личное воспоминание автора.\n\nIII. Если страницы шелестят сами по себе — Смотритель уже рядом."]
  ];
  $("pageTitle").textContent=pages[page][0];$("pageText").textContent=pages[page][1];
  $("pageClues").textContent=page===1? "СОБРАНО: "+collected.size+" / 3":"ЗАПИСИ СЛЕДОВАТЕЛЯ";
- $("bookPageLabel").textContent=(page+1)+" / 3";$("leftPageNum").textContent=String(page*2+1).padStart(2,"0");$("rightPageNum").textContent=String(page*2+2).padStart(2,"0");
+ $("bookPageLabel").textContent=(page+1)+" / 4";$("leftPageNum").textContent=String(page*2+1).padStart(2,"0");$("rightPageNum").textContent=String(page*2+2).padStart(2,"0");
 }
 function toast(message){const t=$("toast");t.textContent=message;t.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove("show"),2300);}
 function collectNearby(){
@@ -117,17 +126,26 @@ function collectNearby(){
  if(collected.size===3)revealWatcher();
  nearby=null;$("interactPrompt").style.display="none";
 }
+function performInteraction(){
+ if(nearby){collectNearby();return;}
+ if(watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8){
+   if(!watcherInteracted){watcherInteracted=true;toast("Смотритель: «Не всякое имя должно быть записано...»");$("missionTitle").textContent="Узнай правила Чёрного реестра";$("missionHint").textContent="Осмотри тетрадь на письменном столе.";}
+   else toast("Смотритель молча наблюдает за тобой...");
+   return;
+ }
+ if(notebookPosition.distanceTo(player.position)<2.35){$("bookOverlay").classList.remove("hidden");page=3;renderPage();toast("Ты открыл Чёрный реестр. Прочитай его правила.");return;}
+ toast("Поблизости нет ничего, с чем можно взаимодействовать.");
+}
 function revealWatcher(){
- const watcher=new THREE.Group();watcher.position.set(0,0,-6.5);scene.add(watcher);
+ watcher=new THREE.Group();watcher.position.set(0,0,-6.5);scene.add(watcher);
  const robe=new THREE.Mesh(new THREE.ConeGeometry(.62,2.1,7),mat(0x09090d));robe.position.y=1.05;robe.castShadow=true;watcher.add(robe);
  const face=new THREE.Mesh(new THREE.SphereGeometry(.23,12,8),mat(0x17151a));face.position.y=1.9;watcher.add(face);
  const eyes=new THREE.Mesh(new THREE.BoxGeometry(.22,.035,.025),new THREE.MeshBasicMaterial({color:0xc44b50}));eyes.position.set(0,1.94,.21);watcher.add(eyes);
  const aura=new THREE.PointLight(0x8e2934,4,4);aura.position.y=1.8;watcher.add(aura);
  $("missionTitle").textContent="Кто стоит в темноте?";
- $("missionHint").textContent="Подойди ближе... или открой тетрадь.";
+ $("missionHint").textContent="Подойди к силуэту и нажми «ВЗАИМОДЕЙСТВОВАТЬ»...";
  toast("В глубине библиотеки кто-то появился...");
 }
-$("mobileInteract").addEventListener("click",collectNearby);
 // Hold-to-move touch buttons; keyboard controls remain available.
 document.querySelectorAll("[data-move]").forEach(button=>{
  const key=button.dataset.move;
@@ -135,13 +153,14 @@ document.querySelectorAll("[data-move]").forEach(button=>{
  const release=e=>{if(e)e.preventDefault();keys.delete(key);button.classList.remove("is-pressed");};
  button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("lostpointercapture",release);
 });
+$("actionBtn").addEventListener("click",performInteraction);
 $("cameraBtn").addEventListener("click",()=>{firstPerson=!firstPerson;$("cameraBtn").textContent="КАМЕРА: "+(firstPerson?"1-Е ЛИЦО":"3-Е ЛИЦО");player.children.forEach(c=>c.visible=!firstPerson);});
 $("bookBtn").addEventListener("click",()=>{$("bookOverlay").classList.remove("hidden");renderPage();});
 $("closeBook").addEventListener("click",()=>$("bookOverlay").classList.add("hidden"));
-$("prevPage").addEventListener("click",()=>{page=(page+2)%3;renderPage();});
-$("nextPage").addEventListener("click",()=>{page=(page+1)%3;renderPage();});
+$("prevPage").addEventListener("click",()=>{page=(page+3)%4;renderPage();});
+$("nextPage").addEventListener("click",()=>{page=(page+1)%4;renderPage();});
 $("bookOverlay").addEventListener("click",e=>{if(e.target===$("bookOverlay"))$("bookOverlay").classList.add("hidden");});
-addEventListener("keydown",e=>{keys.add(e.key.toLowerCase());if(e.key.toLowerCase()==="e")collectNearby();if(e.key==="Escape"&&document.pointerLockElement)document.exitPointerLock();});
+addEventListener("keydown",e=>{keys.add(e.key.toLowerCase());if(e.key.toLowerCase()==="e")performInteraction();if(e.key==="Escape"&&document.pointerLockElement)document.exitPointerLock();});
 addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
 renderer.domElement.addEventListener("click",()=>{if(!matchMedia("(pointer:coarse)").matches && !$("bookOverlay").classList.contains("hidden"))return;if(!matchMedia("(pointer:coarse)").matches)renderer.domElement.requestPointerLock?.();});
 addEventListener("mousemove",e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch=Math.max(-.65,Math.min(.45,pitch-e.movementY*.0018));}});
@@ -191,10 +210,17 @@ function animate(){
  player.position.x=THREE.MathUtils.clamp(player.position.x,-13.6,13.6);player.position.z=THREE.MathUtils.clamp(player.position.z,-7.1,7.1);
  const target=clues.filter(c=>!collected.has(c.id)).sort((a,b)=>a.pos.distanceTo(player.position)-b.pos.distanceTo(player.position))[0];
  nearby=target&&target.pos.distanceTo(player.position)<2.1?target:null;
- $("interactPrompt").style.display=nearby?"block":"none";
- if(nearby)$("interactPrompt").textContent="НАЖМИ «СОБРАТЬ УЛИКУ»: "+nearby.name;
- $("mobileInteract").disabled=!nearby;
- $("mobileInteract").style.opacity=nearby?"1":".48";
+ const watcherNear=!!watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8;
+ const ledgerNear=notebookPosition.distanceTo(player.position)<2.35;
+ const actionLabel=nearby?"СОБРАТЬ УЛИКУ":watcherNear?"ПОГОВОРИТЬ СО СМОТРИТЕЛЕМ":ledgerNear?"ИЗУЧИТЬ ЧЁРНЫЙ РЕЕСТР":"ВЗАИМОДЕЙСТВОВАТЬ";
+ const canAct=!!nearby||watcherNear||ledgerNear;
+ $("actionBtn").disabled=!canAct;
+ $("actionBtn").textContent=actionLabel;
+ $("actionBtn").style.opacity=canAct?"1":".48";
+ $("interactPrompt").style.display=canAct?"block":"none";
+ if(canAct)$("interactPrompt").textContent="НАЖМИ E ИЛИ «"+actionLabel+"»";
+ ledgerGlow.intensity=1+Math.sin(performance.now()*.002)*.35;
+ if(watcher){watcher.rotation.y=Math.sin(performance.now()*.0007)*.12;watcher.position.y=Math.sin(performance.now()*.0012)*.035;}
  if(firstPerson){camera.position.set(player.position.x,player.position.y+1.58,player.position.z);camera.rotation.order="YXZ";camera.rotation.set(pitch,yaw,0);}
  else{const desired=new THREE.Vector3(player.position.x+Math.sin(yaw)*4.8,player.position.y+3.1,player.position.z+Math.cos(yaw)*4.8);camera.position.lerp(desired,1-Math.exp(-5*dt));const look=new THREE.Vector3(player.position.x,player.position.y+1.15,player.position.z);camera.lookAt(look);}
  for(const item of clueMeshes){item.group.rotation.y=Math.sin(performance.now()*.001+item.clue.pos.x)*.06;item.glow.intensity=1.4+Math.sin(performance.now()*.003)*.5;item.group.visible=!collected.has(item.clue.id);}
