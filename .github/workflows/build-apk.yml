@@ -41,10 +41,14 @@ jobs:
           node --check app/src/main/assets/www/game.js
           cmp game.js app/src/main/assets/www/game.js
           cmp style.css app/src/main/assets/www/style.css
-          cmp index.html app/src/main/assets/www/index.html || true
+          grep -q 'src="three.min.js"' app/src/main/assets/www/index.html
+          grep -q 'src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"' index.html
 
       - name: Bundle offline 3D engine
         run: curl -fsSL https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js -o app/src/main/assets/www/three.min.js
+
+      - name: Verify bundled offline engine
+        run: test -s app/src/main/assets/www/three.min.js
 
       - name: Build APK
         run: gradle --no-daemon assembleDebug
