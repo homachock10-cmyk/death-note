@@ -109,7 +109,7 @@ for(const clue of clues){
  const glow=new THREE.PointLight(clue.color,1.6,2.8);glow.position.y=.35;group.add(glow);
  clueMeshes.push({clue,group,glow});
 }
-activeClues=clues;\nconst collected=new Set();
+activeClues=clues;\nconst allEvidence=[...clues,...Object.entries(chapterEvidence).flatMap(([chapter,items])=>items.map((entry,i)=>({id:"ch"+chapter+"_"+i,name:entry[0],detail:entry[1]})))];\nconst collected=new Set();
 const chapterEvidence={
  2:[["Папка без номера","В архиве обнаружена папка, которую вычеркнули из каталога.",new THREE.Vector3(-8,1.1,-4)],["Запись дежурного","Дежурный слышал шаги в закрытом крыле после полуночи.",new THREE.Vector3(8,1.1,-4)],["Сломанный ключ","На ключе остался след красного воска.",new THREE.Vector3(0,1.1,3)]],
  3:[["Голос на плёнке","На записи слышно имя человека, которого нет в списках.",new THREE.Vector3(-10,1.1,2)],["Письмо свидетеля","Свидетель утверждает, что видел самого себя в двух местах.",new THREE.Vector3(10,1.1,2)]],
@@ -149,7 +149,7 @@ function renderPage(){
  $("acceptRules").style.display=(page===3&&!ledgerRead)?"inline-block":"none";
  const pages=[
   ["Дело № 001","В городской библиотеке произошло загадочное происшествие. Исследуй зал, найди три улики и установи, кто скрывает правду."],
-  ["Материалы дела",clues.filter(c=>collected.has(c.id)).map(c=>"• "+c.name+": "+c.detail).join("\n\n")||"Пока улик нет. Найди светящиеся документы в библиотеке."],
+  ["Материалы дела",allEvidence.filter(c=>collected.has(c.id)).map(c=>"• "+c.name+": "+c.detail).join("\n\n")||"Пока улик нет. Найди светящиеся документы в библиотеке."],
   ["Странный силуэт","Когда последняя улика была найдена, в глубине библиотеки мелькнула высокая фигура. Она не похожа ни на одного сотрудника..."],
   ["Правила Чёрного реестра","I. Имя, записанное без понимания его истории, остаётся незавершённым.\n\nII. Каждая запись стирает одно личное воспоминание автора.\n\nIII. Если страницы шелестят сами по себе — Смотритель уже рядом."]
  ];
@@ -180,7 +180,7 @@ function acceptLedgerRules(){
 function performInteraction(){
  if(nearby){collectNearby();return;}
  if(sealUnlocked&&!sealActivated&&Math.hypot(player.position.x,player.position.z+7.1)<2.6){sealActivated=true;sealLight.intensity=0;secretSeal.scale.setScalar(1.8);toast("ПЕЧАТЬ ОТКЛИКНУЛАСЬ. За стеной открылся архивный проход.");startChapter(2);return;}
- if(watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8){
+ if(chapterIndex===1&&watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8){
    if(ledgerRead){toast("Смотритель: «Печать откроет то, что было скрыто...»");return;}
    if(!watcherInteracted){watcherInteracted=true;toast("Смотритель: «Не всякое имя должно быть записано...»");$("missionTitle").textContent="Узнай правила Чёрного реестра";$("missionHint").textContent="Осмотри тетрадь на письменном столе.";}
    else toast("Смотритель молча наблюдает за тобой...");
@@ -290,7 +290,7 @@ function animate(){
  if(watcher){watcher.rotation.y=Math.sin(performance.now()*.0007)*.12;watcher.position.y=Math.sin(performance.now()*.0012)*.035;}
  if(firstPerson){camera.position.set(player.position.x,player.position.y+1.58,player.position.z);camera.rotation.order="YXZ";camera.rotation.set(pitch,yaw,0);}
  else{const desired=new THREE.Vector3(player.position.x+Math.sin(yaw)*4.8,player.position.y+3.1,player.position.z+Math.cos(yaw)*4.8);camera.position.lerp(desired,1-Math.exp(-5*dt));const look=new THREE.Vector3(player.position.x,player.position.y+1.15,player.position.z);camera.lookAt(look);}
- for(const item of clueMeshes){item.group.rotation.y=Math.sin(performance.now()*.001+item.clue.pos.x)*.06;item.glow.intensity=1.4+Math.sin(performance.now()*.003)*.5;item.group.visible=!collected.has(item.clue.id);}
+ for(const item of clueMeshes){item.group.rotation.y=Math.sin(performance.now()*.001+item.clue.pos.x)*.06;item.glow.intensity=1.4+Math.sin(performance.now()*.003)*.5;item.group.visible=activeClues.some(c=>c.id===item.clue.id)&&!collected.has(item.clue.id);}
  renderer.render(scene,camera);
  dust.rotation.y+=dt*.012;
  const loadingScreen=$("loading");
