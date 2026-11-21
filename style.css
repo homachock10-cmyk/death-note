@@ -23,3 +23,5 @@
 .action-button:not(:disabled){box-shadow:0 0 16px #9b263344;border-color:#c35b61}
 .action-button:disabled{cursor:default;filter:saturate(.45)}
 @media(max-width:650px){.action-button{min-width:0;padding:10px 9px;font-size:7px;max-width:148px}}
+
+.accept-rules{border:1px solid #b33b48!important;background:linear-gradient(135deg,#5a111b,#211015)!important;color:#ffe0d5!important;padding:10px 13px!important;box-shadow:0 0 16px #a51f303d;cursor:pointer;font-weight:700}.accept-rules:hover{background:#8b1c2a!important}

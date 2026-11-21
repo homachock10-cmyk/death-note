@@ -63,7 +63,15 @@ const coverTexture=new THREE.TextureLoader().load("notebook-cover.svg");
 coverTexture.colorSpace=THREE.SRGBColorSpace;
 const coverArt=new THREE.Mesh(new THREE.PlaneGeometry(.616,.456),new THREE.MeshBasicMaterial({map:coverTexture,roughness:1}));
 coverArt.rotation.x=-Math.PI/2;coverArt.position.y=.039;ledger.add(coverArt);
+const ledgerTexture=new THREE.TextureLoader().load("notebook-cover.webp");
+ledgerTexture.colorSpace=THREE.SRGBColorSpace;
+const ledgerFace=new THREE.Mesh(new THREE.PlaneGeometry(.56,.4),new THREE.MeshStandardMaterial({map:ledgerTexture,roughness:.92}));
+ledgerFace.rotation.x=-Math.PI/2;ledgerFace.position.set(0,.04,0);ledger.add(ledgerFace);
 const ledgerGlow=new THREE.PointLight(0x8d2634,1.1,2.4);ledgerGlow.position.set(0,.35,0);ledger.add(ledgerGlow);
+const secretSeal=new THREE.Group();secretSeal.position.set(0,1.8,-7.78);secretSeal.visible=false;scene.add(secretSeal);
+const sealRing=new THREE.Mesh(new THREE.TorusGeometry(.48,.035,10,48),new THREE.MeshStandardMaterial({color:0xb82e3b,emissive:0x65101b,emissiveIntensity:1.8,metalness:.35,roughness:.35}));secretSeal.add(sealRing);
+const sealCore=new THREE.Mesh(new THREE.CircleGeometry(.32,8),new THREE.MeshBasicMaterial({color:0x26070c,transparent:true,opacity:.88}));secretSeal.add(sealCore);
+const sealLight=new THREE.PointLight(0xc02d3d,0,4);sealLight.position.set(0,0,.35);secretSeal.add(sealLight);
 const rug=cube(scene,5,.035,3,mat(0x35272a),0,-.035,2.2);
 // Subtle floor inlays and architectural trim give the library more depth.
 const floorLine=mat(0x38312c);
@@ -85,7 +93,7 @@ const hair=new THREE.Mesh(new THREE.SphereGeometry(.26,12,8,0,Math.PI*2,0,Math.P
 const legs=mat(0x15191e);
 for(const x of [-.17,.17]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.48,3,6),legs);leg.position.set(x,.28,0);player.add(leg);}
 player.position.set(0,0,5);
-let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false;
+let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false,ledgerRead=false,sealUnlocked=false,sealActivated=false;
 const keys=new Set();
 let stickX=0,stickY=0;
 const clues=[
@@ -107,6 +115,7 @@ bookNotes.value=localStorage.getItem("blackFilesNotes")||"";
 bookNotes.addEventListener("input",()=>localStorage.setItem("blackFilesNotes",bookNotes.value));
 let page=0;
 function renderPage(){
+ $("acceptRules").style.display=(page===3&&!ledgerRead)?"inline-block":"none";
  const pages=[
   ["Дело № 001","В городской библиотеке произошло загадочное происшествие. Исследуй зал, найди три улики и установи, кто скрывает правду."],
   ["Материалы дела",clues.filter(c=>collected.has(c.id)).map(c=>"• "+c.name+": "+c.detail).join("\n\n")||"Пока улик нет. Найди светящиеся документы в библиотеке."],
@@ -129,14 +138,24 @@ function collectNearby(){
  if(collected.size===3)revealWatcher();
  nearby=null;$("interactPrompt").style.display="none";
 }
+function acceptLedgerRules(){
+ if(ledgerRead)return;
+ ledgerRead=true;sealUnlocked=true;secretSeal.visible=true;sealLight.intensity=3.5;
+ $("bookOverlay").classList.add("hidden");
+ $("missionTitle").textContent="Найди красную печать";
+ $("missionHint").textContent="Реестр пробудился. Осмотри светящийся знак на дальней стене библиотеки.";
+ toast("Смотритель: «Ты прочитал правила. Теперь реестр знает твоё имя...»");
+}
 function performInteraction(){
  if(nearby){collectNearby();return;}
  if(watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8){
+   if(ledgerRead){toast("Смотритель: «Печать откроет то, что было скрыто...»");return;}
    if(!watcherInteracted){watcherInteracted=true;toast("Смотритель: «Не всякое имя должно быть записано...»");$("missionTitle").textContent="Узнай правила Чёрного реестра";$("missionHint").textContent="Осмотри тетрадь на письменном столе.";}
    else toast("Смотритель молча наблюдает за тобой...");
    return;
  }
  if(notebookPosition.distanceTo(player.position)<2.35){$("bookOverlay").classList.remove("hidden");page=3;renderPage();toast("Ты открыл Чёрный реестр. Прочитай его правила.");return;}
+ if(sealUnlocked&&!sealActivated&&Math.hypot(player.position.x,player.position.z+7.1)<2.6){sealActivated=true;sealLight.intensity=0;secretSeal.scale.setScalar(1.8);$("missionTitle").textContent="Глава II: Отголосок";$("missionHint").textContent="За печатью скрывается новое дело. Продолжение следует...";toast("ПЕЧАТЬ ОТКЛИКНУЛАСЬ. Где-то за стеной раздался шёпот.");return;}
  toast("Поблизости нет ничего, с чем можно взаимодействовать.");
 }
 function revealWatcher(){
@@ -160,6 +179,7 @@ $("actionBtn").addEventListener("click",performInteraction);
 $("cameraBtn").addEventListener("click",()=>{firstPerson=!firstPerson;$("cameraBtn").textContent="КАМЕРА: "+(firstPerson?"1-Е ЛИЦО":"3-Е ЛИЦО");player.children.forEach(c=>c.visible=!firstPerson);});
 $("bookBtn").addEventListener("click",()=>{$("bookOverlay").classList.remove("hidden");renderPage();});
 $("closeBook").addEventListener("click",()=>$("bookOverlay").classList.add("hidden"));
+$("acceptRules").addEventListener("click",acceptLedgerRules);
 $("prevPage").addEventListener("click",()=>{page=(page+3)%4;renderPage();});
 $("nextPage").addEventListener("click",()=>{page=(page+1)%4;renderPage();});
 $("bookOverlay").addEventListener("click",e=>{if(e.target===$("bookOverlay"))$("bookOverlay").classList.add("hidden");});
@@ -215,8 +235,9 @@ function animate(){
  nearby=target&&target.pos.distanceTo(player.position)<2.1?target:null;
  const watcherNear=!!watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8;
  const ledgerNear=notebookPosition.distanceTo(player.position)<2.35;
- const actionLabel=nearby?"СОБРАТЬ УЛИКУ":watcherNear?"ПОГОВОРИТЬ СО СМОТРИТЕЛЕМ":ledgerNear?"ИЗУЧИТЬ ЧЁРНЫЙ РЕЕСТР":"ВЗАИМОДЕЙСТВОВАТЬ";
- const canAct=!!nearby||watcherNear||ledgerNear;
+ const sealNear=sealUnlocked&&!sealActivated&&Math.hypot(player.position.x,player.position.z+7.1)<2.6;
+ const actionLabel=nearby?"СОБРАТЬ УЛИКУ":watcherNear?"ПОГОВОРИТЬ СО СМОТРИТЕЛЕМ":ledgerNear?"ИЗУЧИТЬ ЧЁРНЫЙ РЕЕСТР":sealNear?"АКТИВИРОВАТЬ КРАСНУЮ ПЕЧАТЬ":"ВЗАИМОДЕЙСТВОВАТЬ";
+ const canAct=!!nearby||watcherNear||ledgerNear||sealNear;
  $("actionBtn").disabled=!canAct;
  $("actionBtn").textContent=actionLabel;
  $("actionBtn").style.opacity=canAct?"1":".48";
