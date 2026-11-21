@@ -128,6 +128,13 @@ function revealWatcher(){
  toast("В глубине библиотеки кто-то появился...");
 }
 $("mobileInteract").addEventListener("click",collectNearby);
+// Hold-to-move touch buttons; keyboard controls remain available.
+document.querySelectorAll("[data-move]").forEach(button=>{
+ const key=button.dataset.move;
+ const press=e=>{e.preventDefault();keys.add(key);button.classList.add("is-pressed");button.setPointerCapture?.(e.pointerId);};
+ const release=e=>{if(e)e.preventDefault();keys.delete(key);button.classList.remove("is-pressed");};
+ button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("lostpointercapture",release);
+});
 $("cameraBtn").addEventListener("click",()=>{firstPerson=!firstPerson;$("cameraBtn").textContent="КАМЕРА: "+(firstPerson?"1-Е ЛИЦО":"3-Е ЛИЦО");player.children.forEach(c=>c.visible=!firstPerson);});
 $("bookBtn").addEventListener("click",()=>{$("bookOverlay").classList.remove("hidden");renderPage();});
 $("closeBook").addEventListener("click",()=>$("bookOverlay").classList.add("hidden"));
@@ -185,7 +192,9 @@ function animate(){
  const target=clues.filter(c=>!collected.has(c.id)).sort((a,b)=>a.pos.distanceTo(player.position)-b.pos.distanceTo(player.position))[0];
  nearby=target&&target.pos.distanceTo(player.position)<2.1?target:null;
  $("interactPrompt").style.display=nearby?"block":"none";
- if(nearby)$("interactPrompt").textContent="НАЖМИ E, ЧТОБЫ ИЗУЧИТЬ: "+nearby.name;
+ if(nearby)$("interactPrompt").textContent="НАЖМИ «СОБРАТЬ УЛИКУ»: "+nearby.name;
+ $("mobileInteract").disabled=!nearby;
+ $("mobileInteract").style.opacity=nearby?"1":".48";
  if(firstPerson){camera.position.set(player.position.x,player.position.y+1.58,player.position.z);camera.rotation.order="YXZ";camera.rotation.set(pitch,yaw,0);}
  else{const desired=new THREE.Vector3(player.position.x+Math.sin(yaw)*4.8,player.position.y+3.1,player.position.z+Math.cos(yaw)*4.8);camera.position.lerp(desired,1-Math.exp(-5*dt));const look=new THREE.Vector3(player.position.x,player.position.y+1.15,player.position.z);camera.lookAt(look);}
  for(const item of clueMeshes){item.group.rotation.y=Math.sin(performance.now()*.001+item.clue.pos.x)*.06;item.glow.intensity=1.4+Math.sin(performance.now()*.003)*.5;item.group.visible=!collected.has(item.clue.id);}

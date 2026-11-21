@@ -10,3 +10,11 @@
 .mobile-pad{display:none;position:absolute;left:14px;bottom:18px;align-items:center;gap:7px;z-index:5;touch-action:none}
 .mobile-interact{margin:0!important}
 @media(max-width:650px){.mobile-pad{display:flex;flex-direction:column}.bottom-ui{bottom:12px}.action-row{gap:6px}.ui-button{padding:10px 9px}.mission{max-width:calc(100% - 24px)}.hud-right{font-size:8px}}
+
+/* Touch controls: dedicated movement pad and clue collection action. */
+.move-pad{display:grid;grid-template-columns:42px 42px 42px;grid-template-rows:42px 42px;gap:3px;grid-template-areas:". up ." "left down right";touch-action:none;}
+.move-key{width:42px;height:42px;border:1px solid #d5bd8b88;border-radius:9px;background:linear-gradient(145deg,#25201bdc,#080b0deF);color:#ead9b8;font-size:17px;font-weight:700;box-shadow:0 4px 12px #0009;touch-action:none;user-select:none;-webkit-user-select:none;}
+.move-key:active,.move-key.is-pressed{background:#8b633d;color:#fff;transform:scale(.96);}
+.move-up{grid-area:up}.move-left{grid-area:left}.move-down{grid-area:down}.move-right{grid-area:right}
+.mobile-pad{display:none;}
+@media(max-width:800px),(pointer:coarse){.mobile-pad{display:flex;flex-direction:column;align-items:flex-start;gap:8px;bottom:16px;left:12px}.mobile-interact{min-width:132px!important;height:38px!important;border-radius:8px!important;background:#382a1beF!important;font-weight:700!important}.move-pad{display:grid}.joystick{display:none}.look-hint{font:8px monospace;color:#d4c5a6;background:#08090b99;padding:5px 7px;border-radius:4px}.bottom-ui{bottom:12px;left:12px;right:12px;justify-content:flex-end}.action-row{justify-content:flex-end}}
