@@ -93,7 +93,7 @@ const hair=new THREE.Mesh(new THREE.SphereGeometry(.26,12,8,0,Math.PI*2,0,Math.P
 const legs=mat(0x15191e);
 for(const x of [-.17,.17]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.48,3,6),legs);leg.position.set(x,.28,0);player.add(leg);}
 player.position.set(0,0,5);
-let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false,ledgerRead=false,sealUnlocked=false,sealActivated=false;
+let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false,ledgerRead=false,sealUnlocked=false,sealActivated=false;\nlet gameStarted=false,chapterIndex=1,campaignComplete=false;\nlet activeClues=clues;
 const keys=new Set();
 let stickX=0,stickY=0;
 const clues=[
@@ -110,6 +110,37 @@ for(const clue of clues){
  clueMeshes.push({clue,group,glow});
 }
 const collected=new Set();
+const chapterEvidence={
+ 2:[["Папка без номера","В архиве обнаружена папка, которую вычеркнули из каталога.",new THREE.Vector3(-8,1.1,-4)],["Запись дежурного","Дежурный слышал шаги в закрытом крыле после полуночи.",new THREE.Vector3(8,1.1,-4)],["Сломанный ключ","На ключе остался след красного воска.",new THREE.Vector3(0,1.1,3)]],
+ 3:[["Голос на плёнке","На записи слышно имя человека, которого нет в списках.",new THREE.Vector3(-10,1.1,2)],["Письмо свидетеля","Свидетель утверждает, что видел самого себя в двух местах.",new THREE.Vector3(10,1.1,2)]],
+ 4:[["Кадр наблюдения","На кадре силуэт стоит прямо за спиной следователя.",new THREE.Vector3(-7,1.1,5)],["Часы смотрителя","Стрелки остановились в момент появления реестра.",new THREE.Vector3(7,1.1,5)],["Скрытая схема","Под полом отмечен проход к комнате записей.",new THREE.Vector3(0,1.1,-2)]],
+ 5:[["Последнее признание","В признании сказано: реестр выбирает не жертву, а автора.",new THREE.Vector3(-5,1.1,-6)],["Пустая страница","На последней странице проступает отпечаток твоей ладони.",new THREE.Vector3(5,1.1,-6)]]
+};
+function setMission(title,hint){$("missionTitle").textContent=title;$("missionHint").textContent=hint;}
+function spawnChapterEvidence(index){
+ activeClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2],color:0xc04a55}));
+ for(const clue of activeClues){
+  const group=new THREE.Group();group.position.copy(clue.pos);scene.add(group);
+  const base=new THREE.Mesh(new THREE.BoxGeometry(.46,.06,.34),darkWood);base.castShadow=true;group.add(base);
+  const sheet=new THREE.Mesh(new THREE.PlaneGeometry(.34,.25),paper);sheet.rotation.x=-Math.PI/2;sheet.position.y=.045;group.add(sheet);
+  const glow=new THREE.PointLight(0xc04a55,1.8,3);glow.position.y=.4;group.add(glow);
+  clueMeshes.push({clue,group,glow});group.visible=false;
+ }
+}
+for(const index of [2,3,4,5])spawnChapterEvidence(index);
+function startChapter(index){
+ chapterIndex=index;activeClues=chapterEvidence[index];
+ for(const item of clueMeshes)item.group.visible=activeClues.some(c=>c.id===item.clue.id)?!collected.has(item.clue.id):item.clue.id==="mira"||item.clue.id==="ren"||item.clue.id==="kaito"?!collected.has(item.clue.id):false;
+ const titles={2:"Глава II · Архив без номера",3:"Глава III · Свидетель, которого нет",4:"Глава IV · Комната наблюдения",5:"Глава V · Последняя запись"};
+ const hints={2:"Найди три следа в закрытом архивном крыле.",3:"Собери две части свидетельства и выясни, кто оставил запись.",4:"Исследуй комнату наблюдения и раскрой, кто следил за тобой.",5:"Найди последнее признание. Затем вернись к Чёрному реестру."};
+ setMission(titles[index],hints[index]);$("statusText").textContent="BLACK FILES · ГЛАВА "+index;
+ $("clueCounter").textContent="0/"+activeClues.length;
+ toast(titles[index]);
+}
+function finishChapter(index){
+ if(index<5){toast("Глава завершена. Материалы следующего дела уже ждут.");startChapter(index+1);}
+ else{setMission("Глава V завершена · Вернись к реестру","Подойди к чёрной тетради на столе и нажми «ВЗАИМОДЕЙСТВОВАТЬ».");toast("Все улики собраны. Осталась последняя запись.");}
+}
 const bookNotes=$("notes");
 bookNotes.value=localStorage.getItem("blackFilesNotes")||"";
 bookNotes.addEventListener("input",()=>localStorage.setItem("blackFilesNotes",bookNotes.value));
@@ -148,14 +179,25 @@ function acceptLedgerRules(){
 }
 function performInteraction(){
  if(nearby){collectNearby();return;}
- if(sealUnlocked&&!sealActivated&&Math.hypot(player.position.x,player.position.z+7.1)<2.6){sealActivated=true;sealLight.intensity=0;secretSeal.scale.setScalar(1.8);$("missionTitle").textContent="Глава II: Отголосок";$("missionHint").textContent="За печатью скрывается новое дело. Продолжение следует...";toast("ПЕЧАТЬ ОТКЛИКНУЛАСЬ. Где-то за стеной раздался шёпот.");return;}
+ if(sealUnlocked&&!sealActivated&&Math.hypot(player.position.x,player.position.z+7.1)<2.6){sealActivated=true;sealLight.intensity=0;secretSeal.scale.setScalar(1.8);toast("ПЕЧАТЬ ОТКЛИКНУЛАСЬ. За стеной открылся архивный проход.");startChapter(2);return;}
  if(watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8){
    if(ledgerRead){toast("Смотритель: «Печать откроет то, что было скрыто...»");return;}
    if(!watcherInteracted){watcherInteracted=true;toast("Смотритель: «Не всякое имя должно быть записано...»");$("missionTitle").textContent="Узнай правила Чёрного реестра";$("missionHint").textContent="Осмотри тетрадь на письменном столе.";}
    else toast("Смотритель молча наблюдает за тобой...");
    return;
  }
- if(notebookPosition.distanceTo(player.position)<2.35){$("bookOverlay").classList.remove("hidden");page=3;renderPage();toast("Ты открыл Чёрный реестр. Прочитай его правила.");return;}
+ if(notebookPosition.distanceTo(player.position)<2.35){
+ if(chapterIndex===5&&activeClues.every(c=>collected.has(c.id))&&!campaignComplete){
+  campaignComplete=true;$("bookOverlay").classList.remove("hidden");page=3;renderPage();
+  $("pageTitle").textContent="Последняя запись";
+  $("pageText").textContent="Ты собрал все пять частей дела. Смотритель исчез, но на пустой странице проступили слова: «Первое имя уже было твоим». Дело закрыто… или только началось?";
+  $("pageClues").textContent="КАМПАНИЯ ЗАВЕРШЕНА · 5 ГЛАВ";
+  setMission("Дело закрыто?","Ты раскрыл пять глав Чёрного дела. Но реестр оставил последнее предупреждение.");
+  toast("ПЯТЬ ГЛАВ ПРОЙДЕНЫ. ЧЁРНЫЙ РЕЕСТР НЕ ЗАКРЫТ.");
+  return;
+ }
+ $("bookOverlay").classList.remove("hidden");page=3;renderPage();toast("Ты открыл Чёрный реестр. Прочитай его правила.");return;
+}
  
  toast("Поблизости нет ничего, с чем можно взаимодействовать.");
 }
@@ -176,7 +218,7 @@ document.querySelectorAll("[data-move]").forEach(button=>{
  const release=e=>{if(e)e.preventDefault();keys.delete(key);button.classList.remove("is-pressed");};
  button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("lostpointercapture",release);
 });
-$("actionBtn").addEventListener("click",performInteraction);
+$("actionBtn").addEventListener("click",performInteraction);\n$("startGameBtn").addEventListener("click",()=>{gameStarted=true;$("startScreen").classList.add("hidden");document.body.classList.add("game-started");setMission("Осмотри библиотеку","Найди три улики и выясни, почему Чёрный реестр оказался здесь.");});
 $("cameraBtn").addEventListener("click",()=>{firstPerson=!firstPerson;$("cameraBtn").textContent="КАМЕРА: "+(firstPerson?"1-Е ЛИЦО":"3-Е ЛИЦО");player.children.forEach(c=>c.visible=!firstPerson);});
 $("bookBtn").addEventListener("click",()=>{$("bookOverlay").classList.remove("hidden");renderPage();});
 $("closeBook").addEventListener("click",()=>$("bookOverlay").classList.add("hidden"));
@@ -184,7 +226,7 @@ $("acceptRules").addEventListener("click",acceptLedgerRules);
 $("prevPage").addEventListener("click",()=>{page=(page+3)%4;renderPage();});
 $("nextPage").addEventListener("click",()=>{page=(page+1)%4;renderPage();});
 $("bookOverlay").addEventListener("click",e=>{if(e.target===$("bookOverlay"))$("bookOverlay").classList.add("hidden");});
-addEventListener("keydown",e=>{keys.add(e.key.toLowerCase());if(e.key.toLowerCase()==="e")performInteraction();if(e.key==="Escape"&&document.pointerLockElement)document.exitPointerLock();});
+addEventListener("keydown",e=>{keys.add(e.key.toLowerCase());if(!gameStarted)return;if(e.key.toLowerCase()==="e")performInteraction();if(e.key==="Escape"&&document.pointerLockElement)document.exitPointerLock();});
 addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
 renderer.domElement.addEventListener("click",()=>{if(!matchMedia("(pointer:coarse)").matches && !$("bookOverlay").classList.contains("hidden"))return;if(!matchMedia("(pointer:coarse)").matches)renderer.domElement.requestPointerLock?.();});
 addEventListener("mousemove",e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch=Math.max(-.65,Math.min(.45,pitch-e.movementY*.0018));}});
@@ -230,9 +272,9 @@ function animate(){
  const side=Number(keys.has("d")||keys.has("arrowright"))-Number(keys.has("a")||keys.has("arrowleft"))+stickX;
  forward.set(-Math.sin(yaw),0,-Math.cos(yaw));right.set(Math.cos(yaw),0,-Math.sin(yaw));
  direction.copy(forward).multiplyScalar(f).addScaledVector(right,side);
- if(direction.lengthSq()>0){direction.normalize();player.position.addScaledVector(direction,dt*3.15);player.rotation.y=Math.atan2(-direction.x,-direction.z);}
+ if(gameStarted&&direction.lengthSq()>0){direction.normalize();player.position.addScaledVector(direction,dt*3.15);player.rotation.y=Math.atan2(-direction.x,-direction.z);}
  player.position.x=THREE.MathUtils.clamp(player.position.x,-13.6,13.6);player.position.z=THREE.MathUtils.clamp(player.position.z,-7.1,7.1);
- const target=clues.filter(c=>!collected.has(c.id)).sort((a,b)=>a.pos.distanceTo(player.position)-b.pos.distanceTo(player.position))[0];
+ const target=activeClues.filter(c=>!collected.has(c.id)).sort((a,b)=>a.pos.distanceTo(player.position)-b.pos.distanceTo(player.position))[0];
  nearby=target&&target.pos.distanceTo(player.position)<2.1?target:null;
  const watcherNear=!!watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8;
  const ledgerNear=notebookPosition.distanceTo(player.position)<2.35;
@@ -255,4 +297,4 @@ function animate(){
  if(loadingScreen){loadingScreen.style.opacity="0";setTimeout(()=>loadingScreen.remove(),550);}
 }
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,isTouchDevice?1.5:2));});
-renderPage();animate();
+renderPage();for(const item of clueMeshes)item.group.visible=item.clue.id==="mira"||item.clue.id==="ren"||item.clue.id==="kaito";animate();
