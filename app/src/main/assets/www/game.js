@@ -122,7 +122,7 @@ const chapterEvidence={
 const allEvidence=[...clues,...Object.entries(chapterEvidence).flatMap(([chapter,items])=>items.map((entry,i)=>({id:"ch"+chapter+"_"+i,name:entry[0],detail:entry[1]})))];
 function setMission(title,hint){$("missionTitle").textContent=title;$("missionHint").textContent=hint;}
 function spawnChapterEvidence(index){
- activeClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2],color:0xc04a55}));
+ // Do not replace activeClues here: the initial chapter must remain the three opening clues.
  for(const clue of activeClues){
   const group=new THREE.Group();group.position.copy(clue.pos);scene.add(group);
   const base=new THREE.Mesh(new THREE.BoxGeometry(.46,.06,.34),darkWood);base.castShadow=true;group.add(base);
