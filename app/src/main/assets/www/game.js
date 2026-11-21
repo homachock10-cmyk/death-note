@@ -93,7 +93,9 @@ const hair=new THREE.Mesh(new THREE.SphereGeometry(.26,12,8,0,Math.PI*2,0,Math.P
 const legs=mat(0x15191e);
 for(const x of [-.17,.17]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.48,3,6),legs);leg.position.set(x,.28,0);player.add(leg);}
 player.position.set(0,0,5);
-let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false,ledgerRead=false,sealUnlocked=false,sealActivated=false;\nlet gameStarted=false,chapterIndex=1,campaignComplete=false;\nlet activeClues=[];
+let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false,ledgerRead=false,sealUnlocked=false,sealActivated=false;
+let gameStarted=false,chapterIndex=1,campaignComplete=false;
+let activeClues=[];
 const keys=new Set();
 let stickX=0,stickY=0;
 const clues=[
@@ -109,13 +111,15 @@ for(const clue of clues){
  const glow=new THREE.PointLight(clue.color,1.6,2.8);glow.position.y=.35;group.add(glow);
  clueMeshes.push({clue,group,glow});
 }
-activeClues=clues;\nconst allEvidence=[...clues,...Object.entries(chapterEvidence).flatMap(([chapter,items])=>items.map((entry,i)=>({id:"ch"+chapter+"_"+i,name:entry[0],detail:entry[1]})))];\nconst collected=new Set();
+activeClues=clues;
+const collected=new Set();
 const chapterEvidence={
  2:[["Папка без номера","В архиве обнаружена папка, которую вычеркнули из каталога.",new THREE.Vector3(-8,1.1,-4)],["Запись дежурного","Дежурный слышал шаги в закрытом крыле после полуночи.",new THREE.Vector3(8,1.1,-4)],["Сломанный ключ","На ключе остался след красного воска.",new THREE.Vector3(0,1.1,3)]],
  3:[["Голос на плёнке","На записи слышно имя человека, которого нет в списках.",new THREE.Vector3(-10,1.1,2)],["Письмо свидетеля","Свидетель утверждает, что видел самого себя в двух местах.",new THREE.Vector3(10,1.1,2)]],
  4:[["Кадр наблюдения","На кадре силуэт стоит прямо за спиной следователя.",new THREE.Vector3(-7,1.1,5)],["Часы смотрителя","Стрелки остановились в момент появления реестра.",new THREE.Vector3(7,1.1,5)],["Скрытая схема","Под полом отмечен проход к комнате записей.",new THREE.Vector3(0,1.1,-2)]],
  5:[["Последнее признание","В признании сказано: реестр выбирает не жертву, а автора.",new THREE.Vector3(-5,1.1,-6)],["Пустая страница","На последней странице проступает отпечаток твоей ладони.",new THREE.Vector3(5,1.1,-6)]]
 };
+const allEvidence=[...clues,...Object.entries(chapterEvidence).flatMap(([chapter,items])=>items.map((entry,i)=>({id:"ch"+chapter+"_"+i,name:entry[0],detail:entry[1]})))];
 function setMission(title,hint){$("missionTitle").textContent=title;$("missionHint").textContent=hint;}
 function spawnChapterEvidence(index){
  activeClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2],color:0xc04a55}));
@@ -130,11 +134,11 @@ function spawnChapterEvidence(index){
 for(const index of [2,3,4,5])spawnChapterEvidence(index);
 function startChapter(index){
  chapterIndex=index;activeClues=chapterEvidence[index];
- for(const item of clueMeshes)item.group.visible=activeClues.some(c=>c.id===item.clue.id)?!collected.has(item.clue.id):item.clue.id==="mira"||item.clue.id==="ren"||item.clue.id==="kaito"?!collected.has(item.clue.id):false;
+ for(const item of clueMeshes)item.group.visible=activeClues.some(c=>c.id===item.clue.id)&&!collected.has(item.clue.id);
  const titles={2:"Глава II · Архив без номера",3:"Глава III · Свидетель, которого нет",4:"Глава IV · Комната наблюдения",5:"Глава V · Последняя запись"};
  const hints={2:"Найди три следа в закрытом архивном крыле.",3:"Собери две части свидетельства и выясни, кто оставил запись.",4:"Исследуй комнату наблюдения и раскрой, кто следил за тобой.",5:"Найди последнее признание. Затем вернись к Чёрному реестру."};
  setMission(titles[index],hints[index]);$("statusText").textContent="BLACK FILES · ГЛАВА "+index;
- $("clueCounter").textContent="0/"+activeClues.length;
+ $("clueCounter").textContent=activeClues.filter(c=>collected.has(c.id)).length+"/"+activeClues.length;
  toast(titles[index]);
 }
 function finishChapter(index){
@@ -154,7 +158,7 @@ function renderPage(){
   ["Правила Чёрного реестра","I. Имя, записанное без понимания его истории, остаётся незавершённым.\n\nII. Каждая запись стирает одно личное воспоминание автора.\n\nIII. Если страницы шелестят сами по себе — Смотритель уже рядом."]
  ];
  $("pageTitle").textContent=pages[page][0];$("pageText").textContent=pages[page][1];
- $("pageClues").textContent=page===1? "СОБРАНО: "+collected.size+" / 3":"ЗАПИСИ СЛЕДОВАТЕЛЯ";
+ $("pageClues").textContent=page===1? "СОБРАНО: "+collected.size+" / "+allEvidence.length:"ЗАПИСИ СЛЕДОВАТЕЛЯ";
  $("bookPageLabel").textContent=(page+1)+" / 4";$("leftPageNum").textContent=String(page*2+1).padStart(2,"0");$("rightPageNum").textContent=String(page*2+2).padStart(2,"0");
 }
 function toast(message){const t=$("toast");t.textContent=message;t.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove("show"),2300);}
@@ -162,12 +166,14 @@ function collectNearby(){
  if(!nearby)return;
  if(collected.has(nearby.id)){toast("Эта улика уже в тетради.");return;}
  collected.add(nearby.id);
- $("clueCounter").textContent=collected.size+"/3";
- $("missionTitle").textContent=collected.size===3?"Найди таинственную фигуру":"Улики найдены: "+collected.size+"/3";
- $("missionHint").textContent=collected.size===3?"Что-то движется между стеллажами...":"Продолжай осматривать библиотеку.";
+ const chapterCollected=activeClues.filter(c=>collected.has(c.id)).length;
+ const chapterTotal=activeClues.length;
+ $("clueCounter").textContent=chapterCollected+"/"+chapterTotal;
+ $("missionTitle").textContent=chapterCollected===chapterTotal?(chapterIndex===1?"Найди таинственную фигуру":"Глава завершена"):"Улики найдены: "+chapterCollected+"/"+chapterTotal;
+ $("missionHint").textContent=chapterCollected===chapterTotal?(chapterIndex===1?"Что-то движется между стеллажами...":"Материалы дела собраны. Продолжение начинается..."):"Продолжай осматривать помещение.";
  renderPage();toast("Добавлено в тетрадь: "+nearby.name);
- if(collected.size===3)revealWatcher();
  nearby=null;$("interactPrompt").style.display="none";
+ if(chapterCollected===chapterTotal){if(chapterIndex===1)revealWatcher();else finishChapter(chapterIndex);}
 }
 function acceptLedgerRules(){
  if(ledgerRead)return;
@@ -218,7 +224,8 @@ document.querySelectorAll("[data-move]").forEach(button=>{
  const release=e=>{if(e)e.preventDefault();keys.delete(key);button.classList.remove("is-pressed");};
  button.addEventListener("pointerdown",press);button.addEventListener("pointerup",release);button.addEventListener("pointercancel",release);button.addEventListener("lostpointercapture",release);
 });
-$("actionBtn").addEventListener("click",performInteraction);\n$("startGameBtn").addEventListener("click",()=>{gameStarted=true;$("startScreen").classList.add("hidden");document.body.classList.add("game-started");setMission("Осмотри библиотеку","Найди три улики и выясни, почему Чёрный реестр оказался здесь.");});
+$("actionBtn").addEventListener("click",performInteraction);
+$("startGameBtn").addEventListener("click",()=>{gameStarted=true;$("startScreen").classList.add("hidden");document.body.classList.add("game-started");setMission("Осмотри библиотеку","Найди три улики и выясни, почему Чёрный реестр оказался здесь.");});
 $("cameraBtn").addEventListener("click",()=>{firstPerson=!firstPerson;$("cameraBtn").textContent="КАМЕРА: "+(firstPerson?"1-Е ЛИЦО":"3-Е ЛИЦО");player.children.forEach(c=>c.visible=!firstPerson);});
 $("bookBtn").addEventListener("click",()=>{$("bookOverlay").classList.remove("hidden");renderPage();});
 $("closeBook").addEventListener("click",()=>$("bookOverlay").classList.add("hidden"));
