@@ -133,7 +133,7 @@ function spawnChapterEvidence(index){
 }
 for(const index of [2,3,4,5])spawnChapterEvidence(index);
 function startChapter(index){
- chapterIndex=index;activeClues=chapterEvidence[index];
+ chapterIndex=index;activeClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2],color:0xc04a55}));
  for(const item of clueMeshes)item.group.visible=activeClues.some(c=>c.id===item.clue.id)&&!collected.has(item.clue.id);
  const titles={2:"Глава II · Архив без номера",3:"Глава III · Свидетель, которого нет",4:"Глава IV · Комната наблюдения",5:"Глава V · Последняя запись"};
  const hints={2:"Найди три следа в закрытом архивном крыле.",3:"Собери две части свидетельства и выясни, кто оставил запись.",4:"Исследуй комнату наблюдения и раскрой, кто следил за тобой.",5:"Найди последнее признание. Затем вернись к Чёрному реестру."};

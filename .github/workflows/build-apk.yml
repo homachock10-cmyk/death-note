@@ -35,6 +35,14 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Validate game JavaScript and mirrored assets
+        run: |
+          node --check game.js
+          node --check app/src/main/assets/www/game.js
+          cmp game.js app/src/main/assets/www/game.js
+          cmp style.css app/src/main/assets/www/style.css
+          cmp index.html app/src/main/assets/www/index.html || true
+
       - name: Bundle offline 3D engine
         run: curl -fsSL https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js -o app/src/main/assets/www/three.min.js
 
