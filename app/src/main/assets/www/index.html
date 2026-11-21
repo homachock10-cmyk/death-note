@@ -31,8 +31,10 @@
     </div>
     <div id="mobilePad" class="mobile-pad">
       <button id="mobileInteract" class="mobile-interact">E · ОСМОТР</button>
-      <button data-move="forward">▲</button>
-      <div><button data-move="left">◀</button><button data-move="back">▼</button><button data-move="right">▶</button></div>
+      <div id="joystick" class="joystick" aria-label="Джойстик движения">
+        <div id="joystickKnob" class="joystick-knob"></div>
+      </div>
+      <div class="look-hint">ПРАВАЯ ЧАСТЬ ЭКРАНА — ОБЗОР</div>
     </div>
     <div id="interactPrompt" class="interact-prompt">НАЖМИ E, ЧТОБЫ ИЗУЧИТЬ</div>
     <div id="toast" class="toast"></div>
@@ -71,7 +73,7 @@
     window.addEventListener('error', function(event) { window.showGameError(event.message || 'Ошибка загрузки 3D-сцены'); });
     window.addEventListener('unhandledrejection', function(event) { window.showGameError(event.reason && event.reason.message ? event.reason.message : 'Ошибка запуска 3D-сцены'); });
   </script>
-  <script src="three.min.js" onerror="showGameError('Не загрузился файл 3D-движка Three.js')"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js" onerror="showGameError('Не загрузился файл 3D-движка Three.js')"></script>
   <script src="game.js" onerror="showGameError('Не загрузился файл game.js')"></script>
 </body>
 </html>

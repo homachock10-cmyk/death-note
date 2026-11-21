@@ -6,7 +6,8 @@ scene.background = new THREE.Color(0x10151a);
 scene.fog = new THREE.FogExp2(0x10151a, 0.035);
 const camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 100);
 const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:"high-performance"});
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.7));
+const isTouchDevice=matchMedia("(pointer:coarse)").matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, isTouchDevice ? 1.5 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -18,7 +19,7 @@ sceneHost.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0x9aabc4, 0x17110d, 1.25));
 const moon = new THREE.DirectionalLight(0xc2d2ef, 1.6);
 moon.position.set(-5,9,6); moon.castShadow = true;
-moon.shadow.mapSize.set(1024,1024); moon.shadow.camera.left=-14; moon.shadow.camera.right=14; moon.shadow.camera.top=14; moon.shadow.camera.bottom=-14;
+moon.shadow.mapSize.set(isTouchDevice?1024:2048,isTouchDevice?1024:2048); moon.shadow.camera.left=-14; moon.shadow.camera.right=14; moon.shadow.camera.top=14; moon.shadow.camera.bottom=-14; moon.shadow.bias=-0.00025; moon.shadow.normalBias=0.025;
 scene.add(moon);
 const warm = new THREE.PointLight(0xffbd79, 18, 12); warm.position.set(0,3.2,0); scene.add(warm);
 
@@ -53,6 +54,17 @@ const desk=cube(scene,2.8,.18,1.25,wood,-1,1,-5);
 for(const x of [-2.1,.1])for(const z of [-5.45,-4.55])cube(scene,.12,1,.12,darkWood,x,.48,z);
 cube(scene,.7,.06,.48,paper,-1,1.13,-5);
 const rug=cube(scene,5,.035,3,mat(0x35272a),0,-.035,2.2);
+// Subtle floor inlays and architectural trim give the library more depth.
+const floorLine=mat(0x38312c);
+for(let x=-14;x<=14;x+=2) cube(scene,.018,.012,29,floorLine,x,-.045,0);
+const trim=mat(0x211914);
+cube(scene,29.6,.16,.12,trim,0,.02,-7.78);cube(scene,29.6,.16,.12,trim,0,.02,7.78);
+cube(scene,.12,.16,15.6,trim,-14.78,.02,0);cube(scene,.12,.16,15.6,trim,14.78,.02,0);
+// Floating dust catches the warm library lights.
+const dustPositions=new Float32Array(180*3);
+for(let i=0;i<180;i++){dustPositions[i*3]=(Math.random()-.5)*25;dustPositions[i*3+1]=.3+Math.random()*3.8;dustPositions[i*3+2]=(Math.random()-.5)*13;}
+const dustGeometry=new THREE.BufferGeometry();dustGeometry.setAttribute("position",new THREE.BufferAttribute(dustPositions,3));
+const dust=new THREE.Points(dustGeometry,new THREE.PointsMaterial({color:0xd8c7a4,size:.025,transparent:true,opacity:.42,depthWrite:false}));scene.add(dust);
 
 // Player: a simple original low-poly detective model.
 const player=new THREE.Group();scene.add(player);
@@ -63,7 +75,8 @@ const legs=mat(0x15191e);
 for(const x of [-.17,.17]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.48,3,6),legs);leg.position.set(x,.28,0);player.add(leg);}
 player.position.set(0,0,5);
 let yaw=0,pitch=-.08,firstPerson=false,nearby=null;
-const keys=new Set(), touchMoves=new Set();
+const keys=new Set();
+let stickX=0,stickY=0;
 const clues=[
  {id:"mira",name:"Журнал доступа",detail:"В журнале есть отметка Миры в 21:32 — на семнадцать минут позже заявленного ухода.",pos:new THREE.Vector3(-1,1.25,-5),color:0xc5a66a},
  {id:"ren",name:"Обрывок записки",detail:"На бумаге написано: «встретимся после закрытия». Почерк не совпадает с конспектом.",pos:new THREE.Vector3(1.1,1.2,-5),color:0xb5c9d9},
@@ -126,21 +139,45 @@ addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
 renderer.domElement.addEventListener("click",()=>{if(!matchMedia("(pointer:coarse)").matches && !$("bookOverlay").classList.contains("hidden"))return;if(!matchMedia("(pointer:coarse)").matches)renderer.domElement.requestPointerLock?.();});
 addEventListener("mousemove",e=>{if(document.pointerLockElement===renderer.domElement){yaw-=e.movementX*.0022;pitch=Math.max(-.65,Math.min(.45,pitch-e.movementY*.0018));}});
 let touchLook=null;
-renderer.domElement.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse"){touchLook={x:e.clientX,y:e.clientY};renderer.domElement.setPointerCapture(e.pointerId);}});
-renderer.domElement.addEventListener("pointermove",e=>{if(touchLook&&e.pointerType!=="mouse"){yaw-=(e.clientX-touchLook.x)*.006;pitch=Math.max(-.65,Math.min(.45,pitch-(e.clientY-touchLook.y)*.004));touchLook={x:e.clientX,y:e.clientY};}});
-renderer.domElement.addEventListener("pointerup",()=>touchLook=null);
-document.querySelectorAll("[data-move]").forEach(b=>{
- const start=e=>{e.preventDefault();touchMoves.add(b.dataset.move);};
- const end=e=>{e.preventDefault();touchMoves.delete(b.dataset.move);};
- b.addEventListener("pointerdown",start);b.addEventListener("pointerup",end);b.addEventListener("pointercancel",end);b.addEventListener("pointerleave",end);
+renderer.domElement.style.touchAction="none";
+renderer.domElement.addEventListener("pointerdown",e=>{
+ if(e.pointerType!=="mouse"&&e.clientX>innerWidth*.34&&!$("bookOverlay").classList.contains("hidden"))return;
+ if(e.pointerType!=="mouse"&&e.clientX>innerWidth*.34){
+   e.preventDefault();touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};
+   renderer.domElement.setPointerCapture(e.pointerId);
+ }
 });
+renderer.domElement.addEventListener("pointermove",e=>{
+ if(touchLook&&e.pointerId===touchLook.id&&e.pointerType!=="mouse"){
+   e.preventDefault();
+   const dx=e.clientX-touchLook.x,dy=e.clientY-touchLook.y;
+   yaw-=dx*.007;pitch=Math.max(-.72,Math.min(.5,pitch-dy*.005));
+   touchLook={id:e.pointerId,x:e.clientX,y:e.clientY};
+ }
+});
+const stopLook=e=>{if(touchLook&&(!e||e.pointerId===touchLook.id))touchLook=null;};
+renderer.domElement.addEventListener("pointerup",stopLook);
+renderer.domElement.addEventListener("pointercancel",stopLook);
+const joystick=$("joystick"),joystickKnob=$("joystickKnob");
+function updateJoystick(e){
+ const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+ const max=r.width*.34,dx=e.clientX-cx,dy=e.clientY-cy,len=Math.hypot(dx,dy),scale=len>max?max/len:1;
+ const x=dx*scale,y=dy*scale;
+ stickX=x/max;stickY=y/max;
+ joystickKnob.style.left=(50+stickX*34)+"%";joystickKnob.style.top=(50+stickY*34)+"%";
+}
+function resetJoystick(){stickX=0;stickY=0;joystickKnob.style.left="50%";joystickKnob.style.top="50%";}
+joystick.addEventListener("pointerdown",e=>{e.preventDefault();joystick.setPointerCapture(e.pointerId);updateJoystick(e);});
+joystick.addEventListener("pointermove",e=>{if(joystick.hasPointerCapture(e.pointerId))updateJoystick(e);});
+joystick.addEventListener("pointerup",resetJoystick);
+joystick.addEventListener("pointercancel",resetJoystick);
 const clock=new THREE.Clock();
 const direction=new THREE.Vector3(),forward=new THREE.Vector3(),right=new THREE.Vector3();
 function animate(){
  requestAnimationFrame(animate);
  const dt=Math.min(clock.getDelta(),.04);
- const f=Number(keys.has("w")||keys.has("arrowup")||touchMoves.has("forward"))-Number(keys.has("s")||keys.has("arrowdown")||touchMoves.has("back"));
- const side=Number(keys.has("d")||keys.has("arrowright")||touchMoves.has("right"))-Number(keys.has("a")||keys.has("arrowleft")||touchMoves.has("left"));
+ const f=Number(keys.has("w")||keys.has("arrowup"))-Number(keys.has("s")||keys.has("arrowdown"))-stickY;
+ const side=Number(keys.has("d")||keys.has("arrowright"))-Number(keys.has("a")||keys.has("arrowleft"))+stickX;
  forward.set(-Math.sin(yaw),0,-Math.cos(yaw));right.set(Math.cos(yaw),0,-Math.sin(yaw));
  direction.copy(forward).multiplyScalar(f).addScaledVector(right,side);
  if(direction.lengthSq()>0){direction.normalize();player.position.addScaledVector(direction,dt*3.15);player.rotation.y=Math.atan2(-direction.x,-direction.z);}
@@ -153,8 +190,9 @@ function animate(){
  else{const desired=new THREE.Vector3(player.position.x+Math.sin(yaw)*4.8,player.position.y+3.1,player.position.z+Math.cos(yaw)*4.8);camera.position.lerp(desired,1-Math.exp(-5*dt));const look=new THREE.Vector3(player.position.x,player.position.y+1.15,player.position.z);camera.lookAt(look);}
  for(const item of clueMeshes){item.group.rotation.y=Math.sin(performance.now()*.001+item.clue.pos.x)*.06;item.glow.intensity=1.4+Math.sin(performance.now()*.003)*.5;item.group.visible=!collected.has(item.clue.id);}
  renderer.render(scene,camera);
+ dust.rotation.y+=dt*.012;
  const loadingScreen=$("loading");
  if(loadingScreen){loadingScreen.style.opacity="0";setTimeout(()=>loadingScreen.remove(),550);}
 }
-addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));});
+addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,isTouchDevice?1.5:2));});
 renderPage();animate();
