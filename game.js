@@ -148,6 +148,7 @@ function acceptLedgerRules(){
 }
 function performInteraction(){
  if(nearby){collectNearby();return;}
+ if(sealUnlocked&&!sealActivated&&Math.hypot(player.position.x,player.position.z+7.1)<2.6){sealActivated=true;sealLight.intensity=0;secretSeal.scale.setScalar(1.8);$("missionTitle").textContent="Глава II: Отголосок";$("missionHint").textContent="За печатью скрывается новое дело. Продолжение следует...";toast("ПЕЧАТЬ ОТКЛИКНУЛАСЬ. Где-то за стеной раздался шёпот.");return;}
  if(watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8){
    if(ledgerRead){toast("Смотритель: «Печать откроет то, что было скрыто...»");return;}
    if(!watcherInteracted){watcherInteracted=true;toast("Смотритель: «Не всякое имя должно быть записано...»");$("missionTitle").textContent="Узнай правила Чёрного реестра";$("missionHint").textContent="Осмотри тетрадь на письменном столе.";}
@@ -155,7 +156,7 @@ function performInteraction(){
    return;
  }
  if(notebookPosition.distanceTo(player.position)<2.35){$("bookOverlay").classList.remove("hidden");page=3;renderPage();toast("Ты открыл Чёрный реестр. Прочитай его правила.");return;}
- if(sealUnlocked&&!sealActivated&&Math.hypot(player.position.x,player.position.z+7.1)<2.6){sealActivated=true;sealLight.intensity=0;secretSeal.scale.setScalar(1.8);$("missionTitle").textContent="Глава II: Отголосок";$("missionHint").textContent="За печатью скрывается новое дело. Продолжение следует...";toast("ПЕЧАТЬ ОТКЛИКНУЛАСЬ. Где-то за стеной раздался шёпот.");return;}
+ 
  toast("Поблизости нет ничего, с чем можно взаимодействовать.");
 }
 function revealWatcher(){
@@ -236,7 +237,7 @@ function animate(){
  const watcherNear=!!watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8;
  const ledgerNear=notebookPosition.distanceTo(player.position)<2.35;
  const sealNear=sealUnlocked&&!sealActivated&&Math.hypot(player.position.x,player.position.z+7.1)<2.6;
- const actionLabel=nearby?"СОБРАТЬ УЛИКУ":watcherNear?"ПОГОВОРИТЬ СО СМОТРИТЕЛЕМ":ledgerNear?"ИЗУЧИТЬ ЧЁРНЫЙ РЕЕСТР":sealNear?"АКТИВИРОВАТЬ КРАСНУЮ ПЕЧАТЬ":"ВЗАИМОДЕЙСТВОВАТЬ";
+ const actionLabel=nearby?"СОБРАТЬ УЛИКУ":sealNear?"АКТИВИРОВАТЬ КРАСНУЮ ПЕЧАТЬ":watcherNear?"ПОГОВОРИТЬ СО СМОТРИТЕЛЕМ":ledgerNear?"ИЗУЧИТЬ ЧЁРНЫЙ РЕЕСТР":"ВЗАИМОДЕЙСТВОВАТЬ";
  const canAct=!!nearby||watcherNear||ledgerNear||sealNear;
  $("actionBtn").disabled=!canAct;
  $("actionBtn").textContent=actionLabel;
