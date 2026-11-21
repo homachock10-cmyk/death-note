@@ -94,7 +94,7 @@ const legs=mat(0x15191e);
 for(const x of [-.17,.17]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.48,3,6),legs);leg.position.set(x,.28,0);player.add(leg);}
 player.position.set(0,0,5);
 let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false,ledgerRead=false,sealUnlocked=false,sealActivated=false;
-let gameStarted=false,chapterIndex=1,campaignComplete=false;
+let gameStarted=false,chapterIndex=1,campaignComplete=false,finaleReady=false;
 let activeClues=[];
 const keys=new Set();
 let stickX=0,stickY=0;
@@ -119,10 +119,53 @@ const chapterEvidence={
  4:[["Кадр наблюдения","На кадре силуэт стоит прямо за спиной следователя.",new THREE.Vector3(-7,1.1,5)],["Часы смотрителя","Стрелки остановились в момент появления реестра.",new THREE.Vector3(7,1.1,5)],["Скрытая схема","Под полом отмечен проход к комнате записей.",new THREE.Vector3(0,1.1,-2)]],
  5:[["Последнее признание","В признании сказано: реестр выбирает не жертву, а автора.",new THREE.Vector3(-5,1.1,-6)],["Пустая страница","На последней странице проступает отпечаток твоей ладони.",new THREE.Vector3(5,1.1,-6)]]
 };
+
+// Four additional locations are built as distinct districts in the same continuous world.
+// Chapter transitions move the detective between these connected map zones.
+const chapterCenters={2:32,3:64,4:96,5:128};
+function buildChapterMap(index){
+ const cx=chapterCenters[index],zone=new THREE.Group();zone.position.x=cx;scene.add(zone);
+ const floorColors={2:0x28282b,3:0x302a29,4:0x20272d,5:0x292126};
+ const wallColors={2:0x39363a,3:0x55443b,4:0x252d35,5:0x30242d};
+ const zoneFloor=mat(floorColors[index]),zoneWall=mat(wallColors[index]);
+ cube(zone,27.5,.22,15.4,zoneFloor,0,-.18,0);
+ cube(zone,27.5,5,.3,zoneWall,0,2.35,-7.7);
+ cube(zone,27.5,5,.3,zoneWall,0,2.35,7.7);
+ // Side walls leave a central passage to the next district.
+ for(const side of [-1,1]){
+  cube(zone,.3,5,4.7,zoneWall,side*13.6,2.35,-5.35);
+  cube(zone,.3,5,4.7,zoneWall,side*13.6,2.35,5.35);
+  cube(zone,.3,.22,6.1,gold,side*13.6,4.85,0);
+ }
+ // A low-lit connecting corridor keeps all five maps inside one world.
+ const corridorMat=mat(0x242126);
+ cube(scene,5,.16,3.2,corridorMat,cx-16, -.18,0);
+ const lamps=[];
+ if(index===2){
+  for(const x of [-9,-4,4,9]){cube(zone,2.2,3.5,.42,darkWood,x,1.75,-5.7);for(let y=.7;y<3.2;y+=.75)cube(zone,2.15,.1,.55,wood,x,y,-5.35);}
+  cube(zone,5,.18,1.4,wood,0,1,-1.2);
+ }else if(index===3){
+  cube(zone,4,.55,2.1,wood,-5,.45,-3);
+  cube(zone,1.5,1.8,.18,darkWood,7,.9,-6.2);
+  cube(zone,2.4,.16,1.2,wood,5,.9,3);
+  for(const x of [-9,9])cube(zone,.18,2.6,.18,darkWood,x,1.3,-6.7);
+ }else if(index===4){
+  for(let x=-9;x<=9;x+=6){cube(zone,3.2,2.1,.22,darkWood,x,1.45,-6.4);for(let n=0;n<3;n++){const screen=new THREE.Mesh(new THREE.PlaneGeometry(.82,.52),new THREE.MeshBasicMaterial({color:n===1?0x8d2634:0x263c48}));screen.position.set(x-1+n,1.65,-6.27);zone.add(screen);}}
+  cube(zone,5,.2,1.5,wood,0,1,-1);
+ }else{
+  for(const x of [-9,-3,3,9]){cube(zone,.55,3.8,.55,darkWood,x,1.9,-5.7);cube(zone,.7,.12,.7,gold,x,3.75,-5.7);}
+  cube(zone,4,.2,2,darkWood,0,.15,1.5);
+  const redLine=mat(0x6d202c);cube(zone,18,.025,.08,redLine,0,.02,-3.5);
+ }
+ const ambient=new THREE.PointLight(index===3?0xffa36b:index===4?0x7899c4:0xc04a55,index===3?13:10,22);ambient.position.set(0,3.4,0);zone.add(ambient);
+ const overhead=new THREE.PointLight(0xffd3a0,5,12);overhead.position.set(0,4.1,5);zone.add(overhead);
+ const marker=new THREE.Mesh(new THREE.TorusGeometry(.8,.045,8,32),new THREE.MeshStandardMaterial({color:0x9b2938,emissive:0x5d101b,emissiveIntensity:1.2}));marker.position.set(0,1.5,-7.25);zone.add(marker);
+}
+for(const index of [2,3,4,5])buildChapterMap(index);
 const allEvidence=[...clues,...Object.entries(chapterEvidence).flatMap(([chapter,items])=>items.map((entry,i)=>({id:"ch"+chapter+"_"+i,name:entry[0],detail:entry[1]})))];
 function setMission(title,hint){$("missionTitle").textContent=title;$("missionHint").textContent=hint;}
 function spawnChapterEvidence(index){
- const chapterClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2],color:0xc04a55}));
+ const chapterClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2].clone().add(new THREE.Vector3(chapterCenters[index],0,0)),color:0xc04a55}));
  for(const clue of chapterClues){
   const group=new THREE.Group();group.position.copy(clue.pos);scene.add(group);
   const base=new THREE.Mesh(new THREE.BoxGeometry(.46,.06,.34),darkWood);base.castShadow=true;group.add(base);
@@ -134,7 +177,9 @@ function spawnChapterEvidence(index){
 for(const index of [2,3,4,5])spawnChapterEvidence(index);
 activeClues=clues; // Start the campaign with chapter I evidence.
 function startChapter(index){
- chapterIndex=index;activeClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2],color:0xc04a55}));
+ chapterIndex=index;
+ activeClues=chapterEvidence[index].map((entry,i)=>({id:"ch"+index+"_"+i,name:entry[0],detail:entry[1],pos:entry[2].clone().add(new THREE.Vector3(chapterCenters[index],0,0)),color:0xc04a55}));
+ player.position.set(chapterCenters[index],0,5);yaw=0;pitch=-.08;finaleReady=false;
  for(const item of clueMeshes)item.group.visible=activeClues.some(c=>c.id===item.clue.id)&&!collected.has(item.clue.id);
  const titles={2:"Глава II · Архив без номера",3:"Глава III · Свидетель, которого нет",4:"Глава IV · Комната наблюдения",5:"Глава V · Последняя запись"};
  const hints={2:"Найди три следа в закрытом архивном крыле.",3:"Собери две части свидетельства и выясни, кто оставил запись.",4:"Исследуй комнату наблюдения и раскрой, кто следил за тобой.",5:"Найди последнее признание. Затем вернись к Чёрному реестру."};
@@ -144,7 +189,7 @@ function startChapter(index){
 }
 function finishChapter(index){
  if(index<5){toast("Глава завершена. Материалы следующего дела уже ждут.");startChapter(index+1);}
- else{setMission("Глава V завершена · Вернись к реестру","Подойди к чёрной тетради на столе и нажми «ВЗАИМОДЕЙСТВОВАТЬ».");toast("Все улики собраны. Осталась последняя запись.");}
+ else{finaleReady=true;player.position.set(0,0,4.5);yaw=0;setMission("Глава V завершена · Вернись к реестру","Ты вернулся в первую локацию. Подойди к Чёрному реестру на столе.");$("statusText").textContent="BLACK FILES · ФИНАЛ";toast("Все улики собраны. Возвращайся в библиотеку.");}
 }
 const bookNotes=$("notes");
 bookNotes.value=localStorage.getItem("blackFilesNotes")||"";
@@ -281,7 +326,8 @@ function animate(){
  forward.set(-Math.sin(yaw),0,-Math.cos(yaw));right.set(Math.cos(yaw),0,-Math.sin(yaw));
  direction.copy(forward).multiplyScalar(f).addScaledVector(right,side);
  if(gameStarted&&direction.lengthSq()>0){direction.normalize();player.position.addScaledVector(direction,dt*3.15);player.rotation.y=Math.atan2(-direction.x,-direction.z);}
- player.position.x=THREE.MathUtils.clamp(player.position.x,-13.6,13.6);player.position.z=THREE.MathUtils.clamp(player.position.z,-7.1,7.1);
+ const mapCenter=finaleReady?0:(chapterCenters[chapterIndex]||0);
+ player.position.x=THREE.MathUtils.clamp(player.position.x,mapCenter-13.1,mapCenter+13.1);player.position.z=THREE.MathUtils.clamp(player.position.z,-7.1,7.1);
  const target=activeClues.filter(c=>!collected.has(c.id)).sort((a,b)=>a.pos.distanceTo(player.position)-b.pos.distanceTo(player.position))[0];
  nearby=target&&target.pos.distanceTo(player.position)<2.1?target:null;
  const watcherNear=!!watcher&&new THREE.Vector3(watcher.position.x,0,watcher.position.z).distanceTo(player.position)<2.8;
