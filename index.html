@@ -2,78 +2,63 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#090909">
-  <meta name="description" content="Тетрадь: Последнее имя — атмосферная детективная браузерная игра.">
+  <meta name="description" content="Тетрадь: Последнее имя — 3D детективное приключение.">
   <title>Тетрадь: Последнее имя</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="grain"></div>
-  <header class="topbar">
-    <a class="brand" href="#" aria-label="На главную"><span class="brand-mark">✦</span> BLACK FILES <small>CASE 01</small></a>
-    <div class="top-status"><span class="live-dot"></span> ДЕЛО ОТКРЫТО</div>
-  </header>
-
-  <main class="shell">
-    <section class="intro">
-      <div class="eyebrow">АРХИВ НЕРАСКРЫТЫХ ДЕЛ · 2006</div>
-      <h1>ТЕТРАДЬ<span>:</span><br><em>ПОСЛЕДНЕЕ ИМЯ</em></h1>
-      <p class="lead">В городе кто-то знает слишком много. Собирай улики, проверяй алиби и реши, кому можно доверять.</p>
-      <div class="intro-meta"><span>ОДИНОЧНОЕ РАССЛЕДОВАНИЕ</span><span>•</span><span>ГЛАВА 01</span><span>•</span><span>~ 10 МИНУТ</span></div>
+  <div id="gameRoot">
+    <div id="scene"></div>
+    <div class="vignette"></div>
+    <header class="hud">
+      <div class="hud-brand"><span>✦</span> BLACK FILES <small>CASE 01</small></div>
+      <div class="hud-right"><span class="status-dot"></span><span id="statusText">БИБЛИОТЕКА · 21:40</span></div>
+    </header>
+    <section class="mission">
+      <div class="mission-kicker">ТЕКУЩЕЕ ЗАДАНИЕ</div>
+      <b id="missionTitle">Осмотри библиотеку</b>
+      <small id="missionHint">Найди три улики. Подойди к предмету и нажми E.</small>
     </section>
-
-    <section class="game-grid">
-      <aside class="panel case-panel">
-        <div class="panel-head"><span>01 / СВОДКА ДЕЛА</span><span class="tiny-stamp">CONFIDENTIAL</span></div>
-        <h2>Инцидент в библиотеке</h2>
-        <p class="muted">В 21:40 известный журналист был найден без сознания. За час до происшествия он получил анонимную записку.</p>
-        <div class="case-facts">
-          <div><small>МЕСТО</small><b>Городская библиотека</b></div>
-          <div><small>ВРЕМЯ</small><b>21:40</b></div>
-          <div><small>ЗАДАЧА</small><b>Найти противоречие</b></div>
+    <div class="crosshair" aria-hidden="true"><i></i><b></b></div>
+    <div class="bottom-ui">
+      <div class="controls-hint">WASD — движение · МЫШЬ — обзор · E — осмотр</div>
+      <div class="action-row">
+        <button id="cameraBtn" class="ui-button">КАМЕРА: 3-Е ЛИЦО</button>
+        <button id="bookBtn" class="ui-button book-button">✎ ТЕТРАДЬ <span id="clueCounter">0/3</span></button>
+      </div>
+    </div>
+    <div id="mobilePad" class="mobile-pad">
+      <button data-move="forward">▲</button>
+      <div><button data-move="left">◀</button><button data-move="back">▼</button><button data-move="right">▶</button></div>
+    </div>
+    <div id="interactPrompt" class="interact-prompt">НАЖМИ E, ЧТОБЫ ИЗУЧИТЬ</div>
+    <div id="toast" class="toast"></div>
+    <div id="bookOverlay" class="overlay hidden">
+      <div class="book">
+        <button id="closeBook" class="close-button" aria-label="Закрыть">×</button>
+        <div class="book-topline">BLACK FILES · ЛИЧНОЕ ДОСЬЕ</div>
+        <div class="book-spread">
+          <article class="paper-page">
+            <div class="page-label">СТРАНИЦА 0<span id="leftPageNum">1</span></div>
+            <h2 id="pageTitle">Дело № 001</h2>
+            <p id="pageText">В городской библиотеке произошло загадочное происшествие. Осмотри помещение и собери улики.</p>
+            <div id="pageClues" class="page-clues">Найденные улики появятся здесь.</div>
+            <div class="page-number">BLACK FILES</div>
+          </article>
+          <article class="paper-page right-page">
+            <div class="page-label">ЗАМЕТКИ СЛЕДОВАТЕЛЯ</div>
+            <textarea id="notes" placeholder="Записывай свои мысли..."></textarea>
+            <div class="page-number">PRIVATE · <span id="rightPageNum">02</span></div>
+          </article>
         </div>
-        <div class="progress-wrap"><div class="progress-label"><span>ХОД РАССЛЕДОВАНИЯ</span><b id="progressText">0 / 3</b></div><div class="progress"><i id="progressBar"></i></div></div>
-        <button id="restartBtn" class="text-button">↻ Начать дело заново</button>
-      </aside>
-
-      <section class="panel evidence-panel">
-        <div class="panel-head"><span>02 / ДОСЬЕ ПОДОЗРЕВАЕМЫХ</span><span class="counter" id="evidenceCount">0 улик найдено</span></div>
-        <div id="suspects" class="suspects">
-          <button class="suspect selected" data-suspect="mira"><span class="avatar">М</span><span><b>Мира Сато</b><small>Архивариус · 28 лет</small></span><span class="arrow">↗</span></button>
-          <button class="suspect" data-suspect="ren"><span class="avatar">Р</span><span><b>Рэн Исида</b><small>Студент · 21 год</small></span><span class="arrow">↗</span></button>
-          <button class="suspect" data-suspect="kaito"><span class="avatar">К</span><span><b>Кайто Морита</b><small>Охранник · 42 года</small></span><span class="arrow">↗</span></button>
-        </div>
-        <div class="suspect-detail" id="suspectDetail" aria-live="polite">
-          <div class="detail-top"><span class="tag">ПОДОЗРЕВАЕМЫЙ № 01</span><span class="status">ОЖИДАЕТ ПРОВЕРКИ</span></div>
-          <h3>Мира Сато</h3>
-          <p>Утверждает, что закрыла архив в 21:15 и после этого не возвращалась. В журнале доступа есть странная запись.</p>
-          <div class="quote">«Я просто выполняла свою работу. Больше мне нечего добавить».</div>
-          <button class="action-button" id="clueBtn">ИЗУЧИТЬ УЛИКУ <span>→</span></button>
-        </div>
-      </section>
-
-      <section class="panel notebook-panel">
-        <div class="panel-head"><span>03 / ЛИЧНЫЕ ЗАМЕТКИ</span><span class="pen-icon">✎</span></div>
-        <label for="notes">Записывай наблюдения. Они сохраняются в этом браузере.</label>
-        <textarea id="notes" placeholder="Например: кто мог войти в архив после закрытия?.."></textarea>
-        <div class="notebook-bottom"><span id="saveStatus">ЛОКАЛЬНЫЕ ЗАМЕТКИ</span><span>PRIVATE</span></div>
-      </section>
-
-      <section class="panel verdict-panel">
-        <div class="panel-head"><span>04 / ВЕРСИЯ СЛЕДОВАТЕЛЯ</span><span class="tiny-stamp">DECISION</span></div>
-        <p class="muted">Когда соберёшь три улики, выбери того, чья история кажется тебе самой подозрительной.</p>
-        <div class="verdict-options" id="verdictOptions">
-          <button data-verdict="mira">Мира Сато</button>
-          <button data-verdict="ren">Рэн Исида</button>
-          <button data-verdict="kaito">Кайто Морита</button>
-        </div>
-        <button id="verdictBtn" class="action-button verdict-submit" disabled>ВЫНЕСТИ ВЕРДИКТ <span>→</span></button>
-        <p id="verdictMessage" class="verdict-message" aria-live="polite">Сначала собери все улики.</p>
-      </section>
-    </section>
-    <footer><span>BLACK FILES © 2026</span><span>ВЫМЫШЛЕННОЕ ДЕТЕКТИВНОЕ ДЕЛО · ФАН-ПРОЕКТ</span><span>СТР. 01</span></footer>
-  </main>
-  <script src="game.js"></script>
+        <div class="book-footer"><button id="prevPage">← НАЗАД</button><span id="bookPageLabel">1 / 3</span><button id="nextPage">ДАЛЕЕ →</button></div>
+      </div>
+    </div>
+    <div id="loading" class="loading"><div class="loading-mark">✦</div><b>ЗАГРУЗКА ДЕЛА</b><span>Подготавливаем библиотеку...</span></div>
+    <noscript>Для запуска игры включите JavaScript.</noscript>
+  </div>
+  <script type="module" src="game.js"></script>
 </body>
 </html>
