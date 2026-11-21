@@ -93,7 +93,7 @@ const hair=new THREE.Mesh(new THREE.SphereGeometry(.26,12,8,0,Math.PI*2,0,Math.P
 const legs=mat(0x15191e);
 for(const x of [-.17,.17]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.11,.48,3,6),legs);leg.position.set(x,.28,0);player.add(leg);}
 player.position.set(0,0,5);
-let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false,ledgerRead=false,sealUnlocked=false,sealActivated=false;\nlet gameStarted=false,chapterIndex=1,campaignComplete=false;\nlet activeClues=clues;
+let yaw=0,pitch=-.08,firstPerson=false,nearby=null,watcher=null,watcherInteracted=false,ledgerRead=false,sealUnlocked=false,sealActivated=false;\nlet gameStarted=false,chapterIndex=1,campaignComplete=false;\nlet activeClues=[];
 const keys=new Set();
 let stickX=0,stickY=0;
 const clues=[
@@ -109,7 +109,7 @@ for(const clue of clues){
  const glow=new THREE.PointLight(clue.color,1.6,2.8);glow.position.y=.35;group.add(glow);
  clueMeshes.push({clue,group,glow});
 }
-const collected=new Set();
+activeClues=clues;\nconst collected=new Set();
 const chapterEvidence={
  2:[["Папка без номера","В архиве обнаружена папка, которую вычеркнули из каталога.",new THREE.Vector3(-8,1.1,-4)],["Запись дежурного","Дежурный слышал шаги в закрытом крыле после полуночи.",new THREE.Vector3(8,1.1,-4)],["Сломанный ключ","На ключе остался след красного воска.",new THREE.Vector3(0,1.1,3)]],
  3:[["Голос на плёнке","На записи слышно имя человека, которого нет в списках.",new THREE.Vector3(-10,1.1,2)],["Письмо свидетеля","Свидетель утверждает, что видел самого себя в двух местах.",new THREE.Vector3(10,1.1,2)]],
