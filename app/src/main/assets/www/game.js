@@ -1,4 +1,3 @@
-const THREE = await import(location.protocol === "file:" ? "./three.module.js" : "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js");
 
 const $ = id => document.getElementById(id);
 const sceneHost = $("scene");
@@ -115,6 +114,7 @@ function revealWatcher(){
  $("missionHint").textContent="Подойди ближе... или открой тетрадь.";
  toast("В глубине библиотеки кто-то появился...");
 }
+$("mobileInteract").addEventListener("click",collectNearby);
 $("cameraBtn").addEventListener("click",()=>{firstPerson=!firstPerson;$("cameraBtn").textContent="КАМЕРА: "+(firstPerson?"1-Е ЛИЦО":"3-Е ЛИЦО");player.children.forEach(c=>c.visible=!firstPerson);});
 $("bookBtn").addEventListener("click",()=>{$("bookOverlay").classList.remove("hidden");renderPage();});
 $("closeBook").addEventListener("click",()=>$("bookOverlay").classList.add("hidden"));
