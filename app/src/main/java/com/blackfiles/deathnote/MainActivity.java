@@ -7,6 +7,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.view.Window;
+import android.view.View;
 import android.graphics.Color;
 
 public class MainActivity extends Activity {
@@ -20,6 +21,7 @@ public class MainActivity extends Activity {
         window.setNavigationBarColor(Color.rgb(9, 10, 11));
 
         gameView = new WebView(this);
+        gameView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         gameView.setBackgroundColor(Color.rgb(9, 10, 11));
         WebSettings settings = gameView.getSettings();
         settings.setJavaScriptEnabled(true);

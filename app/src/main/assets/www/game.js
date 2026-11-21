@@ -153,7 +153,8 @@ function animate(){
  else{const desired=new THREE.Vector3(player.position.x+Math.sin(yaw)*4.8,player.position.y+3.1,player.position.z+Math.cos(yaw)*4.8);camera.position.lerp(desired,1-Math.exp(-5*dt));const look=new THREE.Vector3(player.position.x,player.position.y+1.15,player.position.z);camera.lookAt(look);}
  for(const item of clueMeshes){item.group.rotation.y=Math.sin(performance.now()*.001+item.clue.pos.x)*.06;item.glow.intensity=1.4+Math.sin(performance.now()*.003)*.5;item.group.visible=!collected.has(item.clue.id);}
  renderer.render(scene,camera);
+ const loadingScreen=$("loading");
+ if(loadingScreen){loadingScreen.style.opacity="0";setTimeout(()=>loadingScreen.remove(),550);}
 }
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));});
 renderPage();animate();
-$("loading").style.opacity="0";setTimeout(()=>$("loading").remove(),550);
