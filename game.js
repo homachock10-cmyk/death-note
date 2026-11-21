@@ -58,8 +58,11 @@ const ledger=new THREE.Group();ledger.position.copy(notebookPosition);scene.add(
 const ledgerCover=mat(0x171316,.48),ledgerEdge=mat(0x8e2835,.55);
 cube(ledger,.62,.075,.46,ledgerCover,0,0,0);
 cube(ledger,.035,.078,.46,ledgerEdge,-.29,0,0);
-const ledgerSigil=new THREE.Mesh(new THREE.TorusGeometry(.105,.012,8,24),new THREE.MeshStandardMaterial({color:0xb64b52,metalness:.35,roughness:.4}));
-ledgerSigil.rotation.x=Math.PI/2;ledgerSigil.position.set(0,.041,0);ledger.add(ledgerSigil);
+// Illustrated black leather cover with the blood-marked hand artwork.
+const coverTexture=new THREE.TextureLoader().load("notebook-cover.svg");
+coverTexture.colorSpace=THREE.SRGBColorSpace;
+const coverArt=new THREE.Mesh(new THREE.PlaneGeometry(.616,.456),new THREE.MeshBasicMaterial({map:coverTexture,roughness:1}));
+coverArt.rotation.x=-Math.PI/2;coverArt.position.y=.039;ledger.add(coverArt);
 const ledgerGlow=new THREE.PointLight(0x8d2634,1.1,2.4);ledgerGlow.position.set(0,.35,0);ledger.add(ledgerGlow);
 const rug=cube(scene,5,.035,3,mat(0x35272a),0,-.035,2.2);
 // Subtle floor inlays and architectural trim give the library more depth.

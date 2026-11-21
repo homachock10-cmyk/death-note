@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 460">
+<defs><linearGradient id="leather" x2="1" y2="1"><stop stop-color="#30282b"/><stop offset=".38" stop-color="#09090c"/><stop offset="1" stop-color="#211519"/></linearGradient><linearGradient id="hand" x2=".25" y2="1"><stop stop-color="#efb6a1"/><stop offset="1" stop-color="#81504a"/></linearGradient><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0.35 0 0 0 0 0.28 0 0 0 0 0.3 0 0 0 .16 0"/></filter></defs>
+<rect width="620" height="460" fill="url(#leather)"/><rect x="10" y="10" width="600" height="440" fill="none" stroke="#7f2935" stroke-width="5"/><rect x="23" y="23" width="574" height="414" fill="none" stroke="#451923" stroke-width="2"/>
+<path d="M310 66 L326 173 420 230 326 248 310 373 294 248 200 230 294 173Z" fill="none" stroke="#9b303d" stroke-width="8"/><circle cx="310" cy="228" r="34" fill="none" stroke="#9b303d" stroke-width="8"/>
+<path d="M-20 316 C39 283 79 232 119 211 C150 195 168 211 156 244 L140 284 C177 235 222 168 255 150 C280 137 296 157 281 184 L238 268 C278 230 319 202 342 220 C362 237 333 266 311 289 C350 265 382 270 390 292 C400 318 363 344 341 361 C382 353 416 368 406 394 C394 429 332 443 280 470 H-20Z" fill="url(#hand)" stroke="#28181b" stroke-width="12"/>
+<path d="M-8 336 C50 300 90 257 122 230 M129 295 C179 245 224 174 260 158 M230 282 C273 244 311 222 335 230 M309 328 C344 297 371 287 388 302" fill="none" stroke="#6d403e" stroke-width="8" stroke-linecap="round"/>
+<path d="M101 325 C118 308 132 324 118 341 C105 357 89 342 101 325Z M263 384 C281 367 296 385 281 401 C266 417 249 400 263 384Z M391 378 C405 365 419 381 406 395 C393 409 379 391 391 378Z" fill="#971a2a"/>
+<g fill="#a21c2c"><circle cx="74" cy="377" r="7"/><circle cx="88" cy="394" r="4"/><circle cx="573" cy="355" r="6"/><circle cx="557" cy="370" r="4"/></g>
+<rect width="620" height="460" filter="url(#grain)" opacity=".35"/>
+</svg>

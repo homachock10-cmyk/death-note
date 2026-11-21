@@ -5,6 +5,7 @@
         android:hardwareAccelerated="true"
         android:allowBackup="true"
         android:label="Тетрадь: Последнее имя"
+        android:icon="@drawable/ic_launcher"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="false">
         <activity
